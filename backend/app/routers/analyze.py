@@ -9,7 +9,8 @@ from app.models.schemas import (
     PurchaseRequest,
 )
 from app.services import nessie, openai_client, scoring
-from app.services.aggregator import load_precomputed_summary
+from app.services.aggregator import compute_summary, load_precomputed_summary
+from app.services.profiles import get_account_id
 from app.state import goal_state
 
 router = APIRouter()
@@ -26,10 +27,16 @@ CONFIRMATION_MESSAGES = {
 async def analyze_purchase(body: PurchaseRequest):
     try:
         # 1. Fetch spending context + transactions in parallel
-        spending_summary = load_precomputed_summary(body.user_id)
+        account_id = get_account_id(body.profile_id)
         goals, transactions = await asyncio.gather(
             nessie.get_goals(body.user_id),
-            nessie.get_transactions(body.user_id),
+            nessie.get_transactions(body.user_id, account_id=account_id),
+        )
+        from app.config import settings
+        spending_summary = (
+            load_precomputed_summary(body.user_id)
+            if settings.use_mock_data
+            else compute_summary(transactions, body.user_id)
         )
         goal = goals[0] if goals else None
 

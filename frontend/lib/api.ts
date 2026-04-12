@@ -3,6 +3,7 @@ import type {
   DecisionResponse,
   Goal,
   InterventionResult,
+  Profile,
   PurchasePayload,
   SpendingSummary,
   Transaction,
@@ -18,6 +19,10 @@ interface GoalsResponse {
 interface TransactionsResponse {
   user_id: string;
   transactions: Transaction[];
+}
+
+interface ProfilesResponse {
+  profiles: Profile[];
 }
 
 async function get<T>(path: string): Promise<T> {
@@ -36,8 +41,15 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-export async function getSpendingSummary(userId = "demo"): Promise<SpendingSummary> {
-  return get<SpendingSummary>(`/spending-summary?user_id=${userId}`);
+export async function getProfiles(): Promise<Profile[]> {
+  const res = await get<ProfilesResponse>("/profiles");
+  return res.profiles;
+}
+
+export async function getSpendingSummary(userId = "demo", profileId?: string): Promise<SpendingSummary> {
+  const params = new URLSearchParams({ user_id: userId });
+  if (profileId) params.set("profile_id", profileId);
+  return get<SpendingSummary>(`/spending-summary?${params}`);
 }
 
 export async function getGoals(userId = "demo"): Promise<Goal[]> {
@@ -45,8 +57,10 @@ export async function getGoals(userId = "demo"): Promise<Goal[]> {
   return res.goals;
 }
 
-export async function getTransactions(userId = "demo"): Promise<Transaction[]> {
-  const res = await get<TransactionsResponse>(`/transactions?user_id=${userId}&days=30`);
+export async function getTransactions(userId = "demo", profileId?: string): Promise<Transaction[]> {
+  const params = new URLSearchParams({ user_id: userId, days: "30" });
+  if (profileId) params.set("profile_id", profileId);
+  const res = await get<TransactionsResponse>(`/transactions?${params}`);
   return res.transactions;
 }
 

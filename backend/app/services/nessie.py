@@ -6,8 +6,12 @@ import httpx
 
 from app.config import settings
 from app.models.schemas import Goal, Transaction
+from app.services.category_inference import infer_category
 
 DATA_DIR = Path(__file__).parent.parent / "data"
+
+# Default Nessie account ID (Alex Chen — demo user)
+NESSIE_ACCOUNT_ID = "69daf1582395a9074d5a4b7b"
 
 
 def _load_mock_transactions() -> List[Transaction]:
@@ -20,50 +24,44 @@ def _load_mock_goals() -> List[Goal]:
         return [Goal(**g) for g in json.load(f)]
 
 
-async def get_transactions(user_id: str) -> List[Transaction]:
+def _parse_nessie_purchase(p: dict) -> Transaction:
+    """Convert a Nessie purchase object to our Transaction schema."""
+    description = p.get("description") or p.get("merchant_id", "Unknown")
+    return Transaction(
+        id=p["_id"],
+        amount=float(p.get("amount", 0)),
+        category=infer_category(description),
+        merchant=description,
+        date=p.get("purchase_date", "2026-01-01"),
+        type="purchase",
+    )
+
+
+async def get_transactions(user_id: str, account_id: str = NESSIE_ACCOUNT_ID) -> List[Transaction]:
     if settings.use_mock_data:
         return _load_mock_transactions()
 
     async with httpx.AsyncClient() as client:
         response = await client.get(
-            f"{settings.nessie_base_url}/accounts/{user_id}/purchases",
+            f"{settings.nessie_base_url}/accounts/{account_id}/purchases",
             params={"key": settings.nessie_api_key},
+            timeout=10,
         )
         response.raise_for_status()
         raw = response.json()
-        return [
-            Transaction(
-                id=t["_id"],
-                amount=t["amount"],
-                category=t.get("description", "Other"),
-                merchant=t.get("merchant_id", "Unknown"),
-                date=t["purchase_date"],
-                type="purchase",
-            )
-            for t in raw
-        ]
+
+        if not isinstance(raw, list):
+            # Nessie returns [] or error dict
+            return _load_mock_transactions()
+
+        transactions = [_parse_nessie_purchase(p) for p in raw]
+
+        # Sort by date descending (most recent first)
+        transactions.sort(key=lambda t: t.date, reverse=True)
+        return transactions
 
 
 async def get_goals(user_id: str) -> List[Goal]:
-    if settings.use_mock_data:
-        return _load_mock_goals()
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{settings.nessie_base_url}/accounts/{user_id}/savings",
-            params={"key": settings.nessie_api_key},
-        )
-        response.raise_for_status()
-        raw = response.json()
-        return [
-            Goal(
-                id=g["_id"],
-                name=g.get("nickname", "Savings Goal"),
-                target_amount=g.get("target_amount", 1000.0),
-                current_amount=g.get("balance", 0.0),
-                monthly_contribution_needed=95.0,
-                days_to_goal_at_current_pace=184,
-                created_at=g.get("start_date", "2026-01-01"),
-            )
-            for g in raw
-        ]
+    # Nessie's hackathon API has no savings goal concept —
+    # goals are always served from mock data.
+    return _load_mock_goals()

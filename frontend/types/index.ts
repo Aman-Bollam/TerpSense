@@ -39,6 +39,16 @@ export interface SpendingSummary {
   total_month: number;
   avg_weekly_spend: number;
   category_weekly_averages: Record<string, number>;
+  profile_id?: string;
+  profile_name?: string;
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  description: string;
+  nessie_account_id: string;
+  avatar: string;
 }
 
 export interface PurchasePayload {
@@ -46,6 +56,7 @@ export interface PurchasePayload {
   amount: number;
   category: TransactionCategory;
   merchant?: string;
+  profile_id?: string;
 }
 
 export interface InterventionResult {

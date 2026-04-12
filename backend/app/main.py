@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import analyze, goals, transactions
+from app.routers import analyze, goals, profiles, transactions
 
 app = FastAPI(title="TerpSense API", version="1.0.0")
 
@@ -16,6 +16,7 @@ app.add_middleware(
 app.include_router(transactions.router, tags=["transactions"])
 app.include_router(goals.router, tags=["goals"])
 app.include_router(analyze.router, tags=["analyze"])
+app.include_router(profiles.router, tags=["profiles"])
 
 
 @app.get("/health")

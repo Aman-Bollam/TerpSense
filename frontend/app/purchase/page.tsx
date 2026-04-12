@@ -13,7 +13,7 @@ export default function PurchasePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { setPendingPurchase, setInterventionResult } = useSessionStore();
+  const { setPendingPurchase, setInterventionResult, activeProfileId } = useSessionStore();
 
   async function handleSubmit(
     amount: number,
@@ -31,6 +31,7 @@ export default function PurchasePage() {
         amount,
         category,
         merchant,
+        profile_id: activeProfileId,
       });
 
       setInterventionResult(result);

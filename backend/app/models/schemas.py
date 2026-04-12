@@ -32,6 +32,8 @@ class SpendingSummary(BaseModel):
     avg_weekly_spend: float
     category_weekly_averages: dict[str, float]
     category_weekly_counts: dict[str, int] = {}
+    profile_id: Optional[str] = None
+    profile_name: Optional[str] = None
 
 
 # --- Request models ---
@@ -41,6 +43,7 @@ class PurchaseRequest(BaseModel):
     amount: float = Field(gt=0, description="Purchase amount must be positive")
     category: str
     merchant: Optional[str] = None
+    profile_id: Optional[str] = None
 
 
 class DecisionRequest(BaseModel):
