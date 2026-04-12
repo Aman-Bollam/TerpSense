@@ -6,8 +6,7 @@
 
 TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns — then intervenes with personalized, number-grounded insights and better alternatives. Our app is designed to be an uplifting service that's designed to be preventative by bringing awareness to its user rather than an app that’s reactive or focused on damage control.
 
-Built for **Bitcamp 2026** using Capital One Nessie mock data and Azure OpenAI.
-
+Built for **Bitcamp 2026** using Capital One Nessie mock data, Azure OpenAI, and **LangGraph** for the AI agent workflow
 ---
 
 ## The Problem
@@ -20,7 +19,7 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 
 1. **Dashboard** — View your spending summary, savings goal, and recent transactions
 2. **Check a Purchase** — Enter an amount, category, and merchant
-3. **Intervention** — AI analyzes the purchase against your patterns and goal
+3. **Intervention** — The LangGraph-powered AI agent analyzes the purchase against your patterns and goal
 4. **Decide** — Redirect to savings / delay / find an alternative / proceed anyway
 5. **Outcome** — See your goal update in real time if you redirect
 
@@ -32,7 +31,7 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 |---|---|
 | Frontend | Next.js 16, Tailwind CSS v4 |
 | Backend | FastAPI, Python |
-| AI | Azure OpenAI (GPT-4o) |
+| AI | Azure OpenAI (GPT-4o), LangGraph |
 | Mock Data | Capital One Nessie API |
 | State | In-memory (no database needed) |
 
@@ -129,7 +128,9 @@ The backend computes all numbers deterministically:
 - **Goal impact days** — math: `purchase_amount × (days_remaining / remaining_to_goal)`
 - **Redirect value** — simple 5% APY approximation over 6 months
 
-Azure OpenAI only generates natural language:
+**LangGraph** is used to power the AI agent workflow. It orchestrates the intervention process by:
+
+Azure OpenAI only generates natural language and agent recommendations:
 - `insights` — 2 personalized sentences citing real numbers
 - `alternative_suggestion` — cheaper option for discretionary categories
 - `summary_line` — one-sentence summary
