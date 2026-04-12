@@ -1,15 +1,10 @@
-"""
-Conversational chat endpoint for the intervention page chatbot.
-Uses Azure OpenAI with purchase context injected into the system prompt.
-"""
-import json
 import logging
-from typing import Any, Optional
+from typing import Optional
+import httpx
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app.services.openai_client import _get_client
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -53,31 +48,42 @@ The user is currently deciding whether to make this purchase:
 - If they redirect to savings: grows to ${ctx.redirect_value_6mo:.2f} in 6 months
 - TerpSense summary: "{ctx.summary_line}"
 
-Answer the user's question concisely (2–4 sentences max). Be specific — cite the numbers above when relevant.
+Answer the user's question concisely (2-4 sentences max). Be specific, cite the numbers above when relevant.
 Do not be preachy. Give honest, grounded advice. If they want to proceed, respect their autonomy while naming the tradeoff."""
 
 
 @router.post("/api/chat", response_model=ChatResponse)
 async def chat(body: ChatRequest):
-    client = _get_client()
+    endpoint = settings.azure_openai_endpoint.rstrip("/")
+    deployment = settings.azure_openai_deployment
+    api_version = settings.azure_openai_api_version
+    api_key = settings.azure_openai_key
 
-    if client is None:
-        # Fallback responses if Azure not configured
-        return ChatResponse(response=_local_fallback(body.message, body.context))
+    url = f"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
+
+    payload = {
+        "messages": [
+            {"role": "system", "content": _build_chat_system(body.context)},
+            {"role": "user", "content": body.message},
+        ],
+        "temperature": 0.5,
+        "max_tokens": 150,
+    }
 
     try:
-        response = client.chat.completions.create(
-            model=settings.azure_openai_deployment,
-            messages=[
-                {"role": "system", "content": _build_chat_system(body.context)},
-                {"role": "user", "content": body.message},
-            ],
-            temperature=0.5,
-            max_tokens=150,
-        )
-        return ChatResponse(response=response.choices[0].message.content.strip())
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.post(
+                url,
+                headers={"api-key": api_key, "Content-Type": "application/json"},
+                json=payload,
+            )
+            print(f"AZURE STATUS: {res.status_code}")
+            res.raise_for_status()
+            data = res.json()
+            reply = data["choices"][0]["message"]["content"].strip()
+            return ChatResponse(response=reply)
     except Exception as e:
-        logger.error(f"Chat OpenAI call failed: {e}")
+        print(f"CHAT ERROR: {e}")
         return ChatResponse(response=_local_fallback(body.message, body.context))
 
 
