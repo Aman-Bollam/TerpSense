@@ -31,9 +31,9 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 |---|---|
 | Frontend | Next.js 16, Tailwind CSS v4 |
 | Backend | FastAPI, Python |
-| AI | Azure OpenAI (GPT-4o), LangGraph |
+| AI | Azure OpenAI (GPT-4o), TerpAI LangGraph |
 | Mock Data | Capital One Nessie API |
-| State | In-memory (no database needed) |
+| State | In-memory session state |
 
 ---
 
