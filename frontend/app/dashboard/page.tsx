@@ -93,6 +93,25 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      {/* Streak Counter */}
+      <div className="mb-4 bg-gradient-to-r from-yellow-500/10 to-red-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-3xl">🔥</div>
+          <div>
+            <p className="text-sm font-black text-white">3 smart decisions this week</p>
+            <p className="text-xs text-zinc-500">
+              You've protected{" "}
+              <span className="text-yellow-400 font-bold">$284</span>{" "}
+              from impulse spending
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-black text-yellow-400">3</p>
+          <p className="text-xs text-zinc-500">streak</p>
+        </div>
+      </div>
+
       {/* Goal */}
       {activeGoal && <div className="mb-4"><GoalCard goal={activeGoal} /></div>}
 
