@@ -4,7 +4,7 @@
 
 > "We don't track your money. We change your behavior."
 
-TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns — then intervenes with personalized, number-grounded insights and better alternatives.
+TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns — then intervenes with personalized, number-grounded insights and better alternatives. Our app is designed to be an uplifting service that's designed to be preventative by bringing awareness to its user rather than an app that’s reactive or focused on damage control.
 
 Built for **Bitcamp 2026** using Capital One Nessie mock data and Azure OpenAI.
 
