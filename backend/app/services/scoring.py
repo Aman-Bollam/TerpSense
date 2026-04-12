@@ -89,8 +89,12 @@ def compute_severity(
             score += 5
 
     # --- Map score to severity ---
-    # Essential categories are capped at yellow
+    # Small purchases are capped: never red below $15, never orange below $5
     if category in ESSENTIAL_CATEGORIES:
+        severity = "yellow"
+    elif purchase_amount < 5:
+        severity = "yellow"
+    elif purchase_amount < 15 and score < 80:
         severity = "yellow"
     elif score >= 65:
         severity = "red"
