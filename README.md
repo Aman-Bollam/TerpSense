@@ -4,7 +4,7 @@
 
 > "We don't track your money. We change your behavior."
 
-TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns — then intervenes with personalized, number-grounded insights and better alternatives. Our app is designed to be an uplifting service that's designed to be preventative by bringing awareness to its user rather than an app that’s reactive or focused on damage control.
+TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns, then intervenes with personalized, number-grounded insights, better alternatives, and an interactive chatbot that helps users ask follow-up questions before deciding.
 
 Built for **Bitcamp 2026** using Capital One Nessie mock data, Azure OpenAI, and **LangGraph** for the AI agent workflow.
 ---
@@ -20,8 +20,9 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 1. **Dashboard** — View your spending summary, savings goal, and recent transactions
 2. **Check a Purchase** — Enter an amount, category, and merchant
 3. **Intervention** — The LangGraph-powered AI agent analyzes the purchase against your patterns and goal
-4. **Decide** — Redirect to savings / delay / find an alternative / proceed anyway
-5. **Outcome** — See your goal update in real time if you redirect
+4. **Ask TerpSense** — Use the chatbot on the intervention page to ask follow-up questions like "Can I afford this?", "What should I do instead?", or "Help me save"
+5. **Decide** — Redirect to savings / delay / find an alternative / proceed anyway
+6. **Outcome** — See your goal update in real time if you redirect
 
 ---
 
@@ -43,7 +44,7 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 terpsense/
 ├── backend/          # FastAPI API server
 │   ├── app/
-│   │   ├── agent/ # LangGraph workflow, memory, and tool orchestration
+│   │   ├── agent/ # LangGraph workflow, memory, chatbot logic and tool orchestration
 │   │   ├── routers/  # API route handlers
 │   │   ├── services/ # Nessie, OpenAI, scoring logic
 │   │   ├── models/   # Pydantic schemas
@@ -51,7 +52,7 @@ terpsense/
 │   └── requirements.txt
 └── frontend/         # Next.js app
     ├── app/          # Pages (landing, dashboard, purchase, intervention, outcome)
-    ├── components/   # UI components
+    ├── components/   # UI components, intervention cards, chatbot panel
     ├── lib/          # API client, utilities
     ├── store/        # Zustand session store
     └── types/        # TypeScript interfaces
@@ -119,6 +120,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 | POST | `/analyze-purchase` | Run AI intervention analysis |
 | POST | `/record-decision` | Log user's decision, update goal |
 | POST | `/reset-demo` | Reset session state for demo |
+| POST | `/chat-purchase` | Chat with TerpSense about the current purchase decision |
 
 ---
 
@@ -141,6 +143,8 @@ Azure OpenAI only generates natural language and agent recommendations:
 - `insights` — 2 personalized sentences citing real numbers
 - `alternative_suggestion` — cheaper option for discretionary categories
 - `summary_line` — one-sentence summary
+
+The intervention page also includes an interactive chatbot powered by the same AI workflow. After the initial analysis, users can ask follow-up questions about the purchase, such as whether they can afford it, what a better option would be, or how the decision affects their financial goals. This makes the experience more conversational and action-oriented instead of stopping at a static recommendation.
 
 A hardcoded contextual fallback runs if the AI call fails, so the demo never breaks.
 
