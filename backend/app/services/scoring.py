@@ -23,49 +23,29 @@ class ScoreResult:
     is_discretionary: bool
 
 
+def _clamp(value: float, min_val: float, max_val: float) -> float:
+    return max(min_val, min(max_val, value))
+
+
 def compute_severity(
     purchase_amount: float,
     category: str,
     spending_summary: SpendingSummary,
     goal: Optional[Goal],
 ) -> ScoreResult:
-    score = 0
     is_discretionary = category in DISCRETIONARY_CATEGORIES
 
     # --- Context values ---
     category_week_spend = spending_summary.week.get(category, 0.0)
     category_month_spend = spending_summary.month.get(category, 0.0)
     category_week_avg = spending_summary.category_weekly_averages.get(category, 50.0)
+    avg_weekly_spend = max(spending_summary.avg_weekly_spend, 1.0)
 
-    # Approximate weekly purchase count from mock transactions
-    # We can't get exact count from summary alone, so estimate from month spend / avg transaction size
+    # Estimate purchase count this week
     avg_tx_size = max(purchase_amount, 20.0)
     category_purchase_count_week = max(1, round(category_week_spend / avg_tx_size))
 
-    # --- Factor 1: Category overspend this week ---
-    if category_week_avg > 0:
-        category_ratio = (category_week_spend + purchase_amount) / category_week_avg
-    else:
-        category_ratio = 1.0
-
-    if category_ratio > 2.5:
-        score += 40
-    elif category_ratio > 2.0:
-        score += 30
-    elif category_ratio > 1.5:
-        score += 20
-    elif category_ratio > 1.2:
-        score += 10
-
-    # --- Factor 2: Purchase frequency this week ---
-    if category_purchase_count_week >= 4:
-        score += 25
-    elif category_purchase_count_week >= 3:
-        score += 15
-    elif category_purchase_count_week >= 2:
-        score += 8
-
-    # --- Factor 3: Goal conflict ---
+    # --- Goal impact (computed first, used in scoring) ---
     goal_impact_days = 0
     if goal:
         remaining = goal.target_amount - goal.current_amount
@@ -73,42 +53,68 @@ def compute_severity(
             days_per_dollar = goal.days_to_goal_at_current_pace / remaining
             goal_impact_days = round(purchase_amount * days_per_dollar)
 
-        if goal_impact_days > 20:
-            score += 30
-        elif goal_impact_days > 14:
-            score += 20
-        elif goal_impact_days > 7:
-            score += 12
+    # -------------------------------------------------------
+    # CONTINUOUS SCORING
+    # Each factor produces a 0–100 contribution, then weights
+    # are applied. Final score is 0–100.
+    # -------------------------------------------------------
 
-    # --- Factor 4: Purchase size relative to weekly average ---
-    if spending_summary.avg_weekly_spend > 0:
-        size_ratio = purchase_amount / spending_summary.avg_weekly_spend
-        if size_ratio > 0.40:
-            score += 10
-        elif size_ratio > 0.25:
-            score += 5
+    # Factor 1: Category overspend this week (40% weight)
+    # How much does adding this purchase exceed the weekly average?
+    # ratio = 1.0 → no overspend → 0 contribution
+    # ratio = 2.0 → 100% over avg → high contribution
+    # ratio = 3.0+ → caps at max
+    category_ratio = (category_week_spend + purchase_amount) / max(category_week_avg, 1.0)
+    overspend_excess = max(0.0, category_ratio - 1.0)  # 0 if at or under avg
+    factor_overspend = _clamp(overspend_excess / 2.0, 0.0, 1.0)  # normalized: 2x excess → 1.0
+
+    # Factor 2: Purchase size relative to total weekly budget (20% weight)
+    # A purchase equal to 50%+ of the weekly average is significant
+    size_ratio = purchase_amount / avg_weekly_spend
+    factor_size = _clamp(size_ratio / 0.5, 0.0, 1.0)  # 50% of weekly avg → 1.0
+
+    # Factor 3: Goal delay (30% weight)
+    # Scale by weeks of delay — each week delayed contributes linearly
+    # 4+ weeks delay → maxes out
+    goal_impact_weeks = goal_impact_days / 7.0
+    factor_goal = _clamp(goal_impact_weeks / 4.0, 0.0, 1.0)  # 4 weeks delay → 1.0
+
+    # Factor 4: Monthly category trend (10% weight)
+    # If this category is also elevated month-over-month, compound the signal
+    monthly_ratio = category_month_spend / max(category_week_avg * 4.3, 1.0)
+    trend_excess = max(0.0, monthly_ratio - 1.0)
+    factor_trend = _clamp(trend_excess / 1.5, 0.0, 1.0)  # 2.5x monthly avg → 1.0
+
+    # --- Weighted composite score ---
+    raw_score = (
+        factor_overspend * 40
+        + factor_size * 20
+        + factor_goal * 30
+        + factor_trend * 10
+    )
+    score = round(_clamp(raw_score, 0.0, 100.0))
 
     # --- Map score to severity ---
-    # Small purchases are capped: never red below $15, never orange below $5
+    # Small purchases are capped: a $5 coffee can't be "red" even if category is overspent
     if category in ESSENTIAL_CATEGORIES:
         severity = "yellow"
     elif purchase_amount < 5:
         severity = "yellow"
-    elif purchase_amount < 15 and score < 80:
-        severity = "yellow"
-    elif score >= 65:
+    elif purchase_amount < 15:
+        severity = "yellow" if score < 70 else "orange"
+    elif score >= 60:
         severity = "red"
-    elif score >= 35:
+    elif score >= 30:
         severity = "orange"
     else:
         severity = "yellow"
 
-    # --- Redirect value: simple 5% APY, 6-month approximation ---
+    # --- Redirect value: 5% APY, 6-month approximation ---
     redirect_value_6mo = round(purchase_amount * 1.025, 2)
 
     return ScoreResult(
         severity=severity,
-        score=min(score, 100),
+        score=score,
         goal_impact_days=goal_impact_days,
         redirect_value_6mo=redirect_value_6mo,
         category_week_spend=category_week_spend,
