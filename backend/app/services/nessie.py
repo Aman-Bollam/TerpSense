@@ -61,6 +61,32 @@ async def get_transactions(user_id: str, account_id: str = NESSIE_ACCOUNT_ID) ->
         return transactions
 
 
+async def create_purchase(
+    amount: float,
+    description: str,
+    account_id: str = NESSIE_ACCOUNT_ID,
+) -> bool:
+    """POST a purchase to the active Nessie account. Returns True on success."""
+    from datetime import date
+
+    payload = {
+        "merchant_id": "66efc6a99683f20dd518aaf6",
+        "medium": "balance",
+        "purchase_date": date.today().isoformat(),
+        "amount": round(amount, 2),
+        "description": description,
+        "status": "completed",
+    }
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{settings.nessie_base_url}/accounts/{account_id}/purchases",
+            params={"key": settings.nessie_api_key},
+            json=payload,
+            timeout=10,
+        )
+        return response.status_code in (200, 201)
+
+
 async def get_goals(user_id: str) -> List[Goal]:
     # Nessie's hackathon API has no savings goal concept —
     # goals are always served from mock data.

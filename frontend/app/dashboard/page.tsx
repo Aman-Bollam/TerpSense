@@ -49,8 +49,14 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
   const [message] = useState(() => MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)])
 
-  const { setActiveGoal, resetSession, activeProfileId, setActiveProfileId } =
-    useSessionStore();
+  const {
+    setActiveGoal,
+    resetSession,
+    activeProfileId,
+    setActiveProfileId,
+    dashboardNeedsRefresh,
+    setDashboardNeedsRefresh,
+  } = useSessionStore();
 
   async function loadData(profileId = activeProfileId) {
     try {
@@ -89,7 +95,12 @@ export default function DashboardPage() {
     }
   }
 
-  useEffect(() => { loadData(activeProfileId); }, []);
+  useEffect(() => {
+    if (dashboardNeedsRefresh) {
+      setDashboardNeedsRefresh(false);
+    }
+    loadData(activeProfileId);
+  }, []);
 
   const activeProfile = profiles.find((p) => p.id === activeProfileId);
 

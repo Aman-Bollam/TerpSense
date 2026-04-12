@@ -15,6 +15,8 @@ export default function InterventionPage() {
     pendingPurchase,
     setDecision,
     setUpdatedGoalAmount,
+    activeProfileId,
+    setDashboardNeedsRefresh,
   } = useSessionStore();
 
   // Guard: if no result in store, send back to purchase
@@ -36,11 +38,17 @@ export default function InterventionPage() {
         user_id: "demo",
         purchase_amount: pendingPurchase.amount,
         category: pendingPurchase.category,
+        merchant: pendingPurchase.merchant,
         decision,
+        profile_id: activeProfileId,
       });
 
       if (res.updated_goal_amount != null) {
         setUpdatedGoalAmount(res.updated_goal_amount);
+      }
+      // Proceed posts a real purchase to Nessie — dashboard must reload
+      if (decision === "proceed" || decision === "redirect") {
+        setDashboardNeedsRefresh(true);
       }
     } catch {
       // Non-critical — outcome screen still renders from local state

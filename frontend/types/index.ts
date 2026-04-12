@@ -73,7 +73,9 @@ export interface DecisionPayload {
   user_id: string;
   purchase_amount: number;
   category: TransactionCategory;
+  merchant?: string;
   decision: Decision;
+  profile_id?: string;
 }
 
 export interface DecisionResponse {

@@ -14,6 +14,7 @@ interface SessionState {
   updatedGoalAmount: number | null;
   activeGoal: Goal | null;
   activeProfileId: string;
+  dashboardNeedsRefresh: boolean;
 
   setPendingPurchase: (purchase: PendingPurchase) => void;
   setInterventionResult: (result: InterventionResult) => void;
@@ -21,6 +22,7 @@ interface SessionState {
   setUpdatedGoalAmount: (amount: number) => void;
   setActiveGoal: (goal: Goal) => void;
   setActiveProfileId: (profileId: string) => void;
+  setDashboardNeedsRefresh: (val: boolean) => void;
   resetSession: () => void;
 }
 
@@ -31,6 +33,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   updatedGoalAmount: null,
   activeGoal: null,
   activeProfileId: "alex",
+  dashboardNeedsRefresh: false,
 
   setPendingPurchase: (purchase) => set({ pendingPurchase: purchase }),
   setInterventionResult: (result) => set({ interventionResult: result }),
@@ -38,11 +41,13 @@ export const useSessionStore = create<SessionState>((set) => ({
   setUpdatedGoalAmount: (amount) => set({ updatedGoalAmount: amount }),
   setActiveGoal: (goal) => set({ activeGoal: goal }),
   setActiveProfileId: (profileId) => set({ activeProfileId: profileId }),
+  setDashboardNeedsRefresh: (val) => set({ dashboardNeedsRefresh: val }),
   resetSession: () =>
     set({
       pendingPurchase: null,
       interventionResult: null,
       decision: null,
       updatedGoalAmount: null,
+      dashboardNeedsRefresh: false,
     }),
 }));

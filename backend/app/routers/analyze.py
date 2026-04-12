@@ -12,6 +12,7 @@ from app.services import nessie, openai_client, scoring
 from app.services.aggregator import compute_summary, load_precomputed_summary
 from app.services.profiles import get_account_id
 from app.state import goal_state
+from app.config import settings as _settings
 
 router = APIRouter()
 
@@ -86,6 +87,7 @@ async def record_decision(body: DecisionRequest):
         updated_goal_amount = None
 
         if body.decision == "redirect":
+            # Add purchase amount to savings goal
             goals = await nessie.get_goals(body.user_id)
             if goals:
                 goal = goals[0]
@@ -93,6 +95,16 @@ async def record_decision(body: DecisionRequest):
                 new_amount = round(min(current + body.purchase_amount, goal.target_amount), 2)
                 goal_state[goal.id] = new_amount
                 updated_goal_amount = new_amount
+
+        elif body.decision == "proceed" and not _settings.use_mock_data:
+            # Post the purchase to Nessie so it appears in transactions + spending summary
+            account_id = get_account_id(body.profile_id)
+            description = body.merchant or body.category
+            await nessie.create_purchase(
+                amount=body.purchase_amount,
+                description=description,
+                account_id=account_id,
+            )
 
         message = CONFIRMATION_MESSAGES.get(body.decision, "Decision recorded.")
 

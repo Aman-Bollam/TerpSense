@@ -50,7 +50,9 @@ class DecisionRequest(BaseModel):
     user_id: str = "demo"
     purchase_amount: float
     category: str
+    merchant: Optional[str] = None
     decision: Literal["proceed", "delay", "redirect", "alternative"]
+    profile_id: Optional[str] = None
 
 
 class UpdateGoalRequest(BaseModel):
