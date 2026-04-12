@@ -6,7 +6,7 @@
 
 TerpSense intercepts purchase decisions *before* they happen. When you're about to buy something, it analyzes your spending history, savings goals, and behavioral patterns — then intervenes with personalized, number-grounded insights and better alternatives. Our app is designed to be an uplifting service that's designed to be preventative by bringing awareness to its user rather than an app that’s reactive or focused on damage control.
 
-Built for **Bitcamp 2026** using Capital One Nessie mock data, Azure OpenAI, and **LangGraph** for the AI agent workflow
+Built for **Bitcamp 2026** using Capital One Nessie mock data, Azure OpenAI, and **LangGraph** for the AI agent workflow.
 ---
 
 ## The Problem
@@ -43,6 +43,7 @@ Young adults don't struggle with money because they lack charts or dashboards. T
 terpsense/
 ├── backend/          # FastAPI API server
 │   ├── app/
+│   │   ├── agent/ # LangGraph workflow, memory, and tool orchestration
 │   │   ├── routers/  # API route handlers
 │   │   ├── services/ # Nessie, OpenAI, scoring logic
 │   │   ├── models/   # Pydantic schemas
@@ -129,6 +130,12 @@ The backend computes all numbers deterministically:
 - **Redirect value** — simple 5% APY approximation over 6 months
 
 **LangGraph** is used to power the AI agent workflow. It orchestrates the intervention process by:
+- loading spending and transaction context
+- pulling savings goal information
+- incorporating lightweight behavior memory
+- calling Azure OpenAI to generate a recommendation
+- returning a structured next-best action
+
 
 Azure OpenAI only generates natural language and agent recommendations:
 - `insights` — 2 personalized sentences citing real numbers
