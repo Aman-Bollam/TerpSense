@@ -23,6 +23,37 @@ const proofPoints = [
   },
 ]
 
+function TerpSenseLogo({ textClass }: { textClass: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+        <rect width="32" height="32" rx="10" fill="#DC2626" />
+        {/* Turtle shell */}
+        <ellipse cx="16" cy="16" rx="8" ry="6" fill="#FBBF24" />
+        <ellipse cx="16" cy="16" rx="5" ry="4" fill="#D97706" />
+        {/* Shell pattern */}
+        <line x1="16" y1="12" x2="16" y2="20" stroke="#FBBF24" strokeWidth="0.8" />
+        <line x1="11" y1="16" x2="21" y2="16" stroke="#FBBF24" strokeWidth="0.8" />
+        <line x1="12" y1="13" x2="20" y2="19" stroke="#FBBF24" strokeWidth="0.8" />
+        <line x1="20" y1="13" x2="12" y2="19" stroke="#FBBF24" strokeWidth="0.8" />
+        {/* Head */}
+        <ellipse cx="24" cy="14" rx="2.5" ry="2" fill="#FBBF24" />
+        {/* Tail */}
+        <ellipse cx="8.5" cy="17" rx="1.5" ry="1" fill="#FBBF24" />
+        {/* Legs */}
+        <ellipse cx="13" cy="22" rx="1.5" ry="1" fill="#FBBF24" />
+        <ellipse cx="19" cy="22" rx="1.5" ry="1" fill="#FBBF24" />
+        <ellipse cx="13" cy="10" rx="1.5" ry="1" fill="#FBBF24" />
+        <ellipse cx="19" cy="10" rx="1.5" ry="1" fill="#FBBF24" />
+      </svg>
+      <span className="text-base font-black tracking-tight">
+        <span className={textClass}>Terp</span>
+        <span className="text-red-500">Sense</span>
+      </span>
+    </div>
+  )
+}
+
 export default function LandingPage() {
   const [visible, setVisible] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
@@ -62,6 +93,11 @@ export default function LandingPage() {
       {!dark && (
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-red-100 opacity-40 rounded-full blur-3xl pointer-events-none" />
       )}
+
+      {/* Logo */}
+      <div className="fixed top-4 left-4 z-50">
+        <TerpSenseLogo textClass={text} />
+      </div>
 
       {/* Dark mode toggle */}
       <div className="fixed top-4 right-4 z-50">

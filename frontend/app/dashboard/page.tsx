@@ -14,7 +14,6 @@ import { SpendingSummaryCard } from "@/components/dashboard/SpendingSummary";
 import { GoalCard } from "@/components/dashboard/GoalCard";
 import { TransactionList } from "@/components/dashboard/TransactionList";
 import { useSessionStore } from "@/store/sessionStore";
-import { formatCurrency } from "@/lib/utils";
 
 function AnimatedNumber({ value }: { value: number }) {
   const [display, setDisplay] = useState(0)
@@ -30,6 +29,21 @@ function AnimatedNumber({ value }: { value: number }) {
     return () => clearInterval(timer)
   }, [value])
   return <span>{display.toLocaleString()}</span>
+}
+
+function TerpSenseLogo() {
+  return (
+    <div className="flex items-center gap-2">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#DC2626" />
+        <path d="M16 4L8 15h7l-3 9 11-13h-7l3-7z" fill="#FBBF24" strokeLinejoin="round" />
+      </svg>
+      <span className="text-lg font-black tracking-tight">
+        <span className="text-white">Terp</span>
+        <span className="text-red-500">Sense</span>
+      </span>
+    </div>
+  )
 }
 
 const MOTIVATIONAL_MESSAGES = [
@@ -134,11 +148,11 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-zinc-950 px-4 py-8 max-w-lg mx-auto">
 
-      {/* Header */}
+      {/* Header with Logo */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl font-bold text-zinc-100">TerpSense</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">Your financial intervention agent</p>
+          <TerpSenseLogo />
+          <p className="text-xs text-zinc-500 mt-1 pl-1">Your financial intervention agent</p>
         </div>
         <div className="flex items-center gap-3">
           <button
