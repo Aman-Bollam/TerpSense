@@ -1,0 +1,11 @@
+[
+  {
+    "id": "goal_001",
+    "name": "Emergency Fund",
+    "target_amount": 1000.00,
+    "current_amount": 430.00,
+    "monthly_contribution_needed": 95.00,
+    "days_to_goal_at_current_pace": 184,
+    "created_at": "2026-01-01"
+  }
+]
