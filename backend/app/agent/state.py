@@ -13,8 +13,12 @@ class AgentState(TypedDict):
     purchase: Purchase
     transactions: list
     spending_summary: dict
-    goal: Optional[dict]
+    goal: Optional[Any]
     score_result: Optional[dict]
     behavior_memory: list
     llm_result: Optional[dict]
     final_response: Optional[dict]
+    # Typed objects passed between nodes (not serialized to final response)
+    _summary_obj: Optional[Any]
+    _goal_obj: Optional[Any]
+    _score_obj: Optional[Any]
