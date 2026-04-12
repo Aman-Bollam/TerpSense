@@ -1,6 +1,6 @@
 export type TransactionCategory =
   | "Clothing"
-  | "Food"
+  | "Dining"
   | "Entertainment"
   | "Transport"
   | "Subscriptions"

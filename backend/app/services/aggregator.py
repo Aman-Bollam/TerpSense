@@ -11,7 +11,7 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 DEMO_TODAY = date(2026, 4, 11)
 
 # Categories to track
-TRACKED_CATEGORIES = ["Clothing", "Food", "Entertainment", "Transport", "Subscriptions", "Health", "Shopping", "Other"]
+TRACKED_CATEGORIES = ["Clothing", "Dining", "Entertainment", "Transport", "Subscriptions", "Health", "Shopping", "Other"]
 
 
 def compute_summary(transactions: List[Transaction], user_id: str = "demo") -> SpendingSummary:
@@ -20,27 +20,31 @@ def compute_summary(transactions: List[Transaction], user_id: str = "demo") -> S
 
     week: dict[str, float] = {c: 0.0 for c in TRACKED_CATEGORIES}
     month: dict[str, float] = {c: 0.0 for c in TRACKED_CATEGORIES}
+    week_counts: dict[str, int] = {c: 0 for c in TRACKED_CATEGORIES}
 
     for t in transactions:
         tx_date = date.fromisoformat(t.date)
-        cat = t.category if t.category in TRACKED_CATEGORIES else "Other"
+        # Normalize "Food" → "Dining" for legacy data
+        cat = t.category
+        if cat == "Food":
+            cat = "Dining"
+        if cat not in TRACKED_CATEGORIES:
+            cat = "Other"
 
         if tx_date >= week_start:
             week[cat] = round(week[cat] + t.amount, 2)
+            week_counts[cat] += 1
         if tx_date >= month_start:
             month[cat] = round(month[cat] + t.amount, 2)
 
-    # Remove zero-value categories from output for cleanliness
     week_clean = {k: v for k, v in week.items() if v > 0}
     month_clean = {k: v for k, v in month.items() if v > 0}
+    counts_clean = {k: v for k, v in week_counts.items() if v > 0}
 
     total_week = round(sum(week_clean.values()), 2)
     total_month = round(sum(month_clean.values()), 2)
-
-    # Historical weekly average: total month spend / ~4.3 weeks
     avg_weekly_spend = round(total_month / 4.3, 2)
 
-    # Per-category weekly average: category month / 4.3
     category_weekly_averages = {
         cat: round(amt / 4.3, 2) for cat, amt in month_clean.items()
     }
@@ -53,6 +57,7 @@ def compute_summary(transactions: List[Transaction], user_id: str = "demo") -> S
         total_month=total_month,
         avg_weekly_spend=avg_weekly_spend,
         category_weekly_averages=category_weekly_averages,
+        category_weekly_counts=counts_clean,
     )
 
 

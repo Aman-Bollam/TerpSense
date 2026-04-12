@@ -31,6 +31,7 @@ class SpendingSummary(BaseModel):
     total_month: float
     avg_weekly_spend: float
     category_weekly_averages: dict[str, float]
+    category_weekly_counts: dict[str, int] = {}
 
 
 # --- Request models ---

@@ -1,27 +1,202 @@
 [
-  { "id": "t01", "amount": 54.20, "category": "Clothing", "merchant": "Zara", "date": "2026-04-08", "type": "purchase" },
-  { "id": "t02", "amount": 38.50, "category": "Clothing", "merchant": "H&M", "date": "2026-04-09", "type": "purchase" },
-  { "id": "t03", "amount": 28.00, "category": "Clothing", "merchant": "Urban Outfitters", "date": "2026-04-10", "type": "purchase" },
-  { "id": "t04", "amount": 22.30, "category": "Clothing", "merchant": "SHEIN", "date": "2026-04-10", "type": "purchase" },
-  { "id": "t05", "amount": 45.00, "category": "Food", "merchant": "Whole Foods", "date": "2026-04-07", "type": "purchase" },
-  { "id": "t06", "amount": 12.50, "category": "Food", "merchant": "Chipotle", "date": "2026-04-09", "type": "purchase" },
-  { "id": "t07", "amount": 14.99, "category": "Subscriptions", "merchant": "Spotify", "date": "2026-04-01", "type": "purchase" },
-  { "id": "t08", "amount": 15.99, "category": "Subscriptions", "merchant": "Netflix", "date": "2026-04-01", "type": "purchase" },
-  { "id": "t09", "amount": 32.00, "category": "Entertainment", "merchant": "AMC Theatres", "date": "2026-04-05", "type": "purchase" },
-  { "id": "t10", "amount": 8.75, "category": "Transport", "merchant": "Uber", "date": "2026-04-06", "type": "purchase" },
-  { "id": "t11", "amount": 62.00, "category": "Clothing", "merchant": "Nike", "date": "2026-04-02", "type": "purchase" },
-  { "id": "t12", "amount": 33.00, "category": "Clothing", "merchant": "Uniqlo", "date": "2026-04-03", "type": "purchase" },
-  { "id": "t13", "amount": 89.00, "category": "Food", "merchant": "Trader Joe's", "date": "2026-04-01", "type": "purchase" },
-  { "id": "t14", "amount": 24.00, "category": "Food", "merchant": "Sweetgreen", "date": "2026-04-03", "type": "purchase" },
-  { "id": "t15", "amount": 18.50, "category": "Food", "merchant": "Starbucks", "date": "2026-04-04", "type": "purchase" },
-  { "id": "t16", "amount": 46.00, "category": "Entertainment", "merchant": "Ticketmaster", "date": "2026-04-02", "type": "purchase" },
-  { "id": "t17", "amount": 12.00, "category": "Transport", "merchant": "Lyft", "date": "2026-04-03", "type": "purchase" },
-  { "id": "t18", "amount": 9.99, "category": "Subscriptions", "merchant": "Hulu", "date": "2026-04-01", "type": "purchase" },
-  { "id": "t19", "amount": 55.00, "category": "Clothing", "merchant": "ASOS", "date": "2026-03-28", "type": "purchase" },
-  { "id": "t20", "amount": 41.00, "category": "Clothing", "merchant": "Gap", "date": "2026-03-25", "type": "purchase" },
-  { "id": "t21", "amount": 78.00, "category": "Food", "merchant": "Whole Foods", "date": "2026-03-28", "type": "purchase" },
-  { "id": "t22", "amount": 22.00, "category": "Food", "merchant": "McDonald's", "date": "2026-03-26", "type": "purchase" },
-  { "id": "t23", "amount": 15.00, "category": "Transport", "merchant": "Metro Card", "date": "2026-03-25", "type": "purchase" },
-  { "id": "t24", "amount": 35.00, "category": "Health", "merchant": "CVS", "date": "2026-03-29", "type": "purchase" },
-  { "id": "t25", "amount": 110.00, "category": "Clothing", "merchant": "Nordstrom", "date": "2026-03-22", "type": "purchase" }
+  {
+    "id": "t01",
+    "amount": 54.2,
+    "category": "Clothing",
+    "merchant": "Zara",
+    "date": "2026-04-08",
+    "type": "purchase"
+  },
+  {
+    "id": "t02",
+    "amount": 38.5,
+    "category": "Clothing",
+    "merchant": "H&M",
+    "date": "2026-04-09",
+    "type": "purchase"
+  },
+  {
+    "id": "t03",
+    "amount": 28.0,
+    "category": "Clothing",
+    "merchant": "Urban Outfitters",
+    "date": "2026-04-10",
+    "type": "purchase"
+  },
+  {
+    "id": "t04",
+    "amount": 22.3,
+    "category": "Clothing",
+    "merchant": "SHEIN",
+    "date": "2026-04-10",
+    "type": "purchase"
+  },
+  {
+    "id": "t05",
+    "amount": 45.0,
+    "category": "Dining",
+    "merchant": "Whole Foods",
+    "date": "2026-04-07",
+    "type": "purchase"
+  },
+  {
+    "id": "t06",
+    "amount": 12.5,
+    "category": "Dining",
+    "merchant": "Chipotle",
+    "date": "2026-04-09",
+    "type": "purchase"
+  },
+  {
+    "id": "t07",
+    "amount": 14.99,
+    "category": "Subscriptions",
+    "merchant": "Spotify",
+    "date": "2026-04-01",
+    "type": "purchase"
+  },
+  {
+    "id": "t08",
+    "amount": 15.99,
+    "category": "Subscriptions",
+    "merchant": "Netflix",
+    "date": "2026-04-01",
+    "type": "purchase"
+  },
+  {
+    "id": "t09",
+    "amount": 32.0,
+    "category": "Entertainment",
+    "merchant": "AMC Theatres",
+    "date": "2026-04-05",
+    "type": "purchase"
+  },
+  {
+    "id": "t10",
+    "amount": 8.75,
+    "category": "Transport",
+    "merchant": "Uber",
+    "date": "2026-04-06",
+    "type": "purchase"
+  },
+  {
+    "id": "t11",
+    "amount": 62.0,
+    "category": "Clothing",
+    "merchant": "Nike",
+    "date": "2026-04-02",
+    "type": "purchase"
+  },
+  {
+    "id": "t12",
+    "amount": 33.0,
+    "category": "Clothing",
+    "merchant": "Uniqlo",
+    "date": "2026-04-03",
+    "type": "purchase"
+  },
+  {
+    "id": "t13",
+    "amount": 89.0,
+    "category": "Dining",
+    "merchant": "Trader Joe's",
+    "date": "2026-04-01",
+    "type": "purchase"
+  },
+  {
+    "id": "t14",
+    "amount": 24.0,
+    "category": "Dining",
+    "merchant": "Sweetgreen",
+    "date": "2026-04-03",
+    "type": "purchase"
+  },
+  {
+    "id": "t15",
+    "amount": 18.5,
+    "category": "Dining",
+    "merchant": "Starbucks",
+    "date": "2026-04-04",
+    "type": "purchase"
+  },
+  {
+    "id": "t16",
+    "amount": 46.0,
+    "category": "Entertainment",
+    "merchant": "Ticketmaster",
+    "date": "2026-04-02",
+    "type": "purchase"
+  },
+  {
+    "id": "t17",
+    "amount": 12.0,
+    "category": "Transport",
+    "merchant": "Lyft",
+    "date": "2026-04-03",
+    "type": "purchase"
+  },
+  {
+    "id": "t18",
+    "amount": 9.99,
+    "category": "Subscriptions",
+    "merchant": "Hulu",
+    "date": "2026-04-01",
+    "type": "purchase"
+  },
+  {
+    "id": "t19",
+    "amount": 55.0,
+    "category": "Clothing",
+    "merchant": "ASOS",
+    "date": "2026-03-28",
+    "type": "purchase"
+  },
+  {
+    "id": "t20",
+    "amount": 41.0,
+    "category": "Clothing",
+    "merchant": "Gap",
+    "date": "2026-03-25",
+    "type": "purchase"
+  },
+  {
+    "id": "t21",
+    "amount": 78.0,
+    "category": "Dining",
+    "merchant": "Whole Foods",
+    "date": "2026-03-28",
+    "type": "purchase"
+  },
+  {
+    "id": "t22",
+    "amount": 22.0,
+    "category": "Dining",
+    "merchant": "McDonald's",
+    "date": "2026-03-26",
+    "type": "purchase"
+  },
+  {
+    "id": "t23",
+    "amount": 15.0,
+    "category": "Transport",
+    "merchant": "Metro Card",
+    "date": "2026-03-25",
+    "type": "purchase"
+  },
+  {
+    "id": "t24",
+    "amount": 35.0,
+    "category": "Health",
+    "merchant": "CVS",
+    "date": "2026-03-29",
+    "type": "purchase"
+  },
+  {
+    "id": "t25",
+    "amount": 110.0,
+    "category": "Clothing",
+    "merchant": "Nordstrom",
+    "date": "2026-03-22",
+    "type": "purchase"
+  }
 ]

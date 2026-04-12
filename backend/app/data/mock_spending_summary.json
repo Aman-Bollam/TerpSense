@@ -2,7 +2,7 @@
   "user_id": "demo",
   "week": {
     "Clothing": 143.00,
-    "Food": 57.50,
+    "Dining": 57.50,
     "Entertainment": 0.00,
     "Transport": 8.75,
     "Subscriptions": 0.00,
@@ -10,7 +10,7 @@
   },
   "month": {
     "Clothing": 310.00,
-    "Food": 340.00,
+    "Dining": 340.00,
     "Entertainment": 78.00,
     "Transport": 45.00,
     "Subscriptions": 40.97,
@@ -21,10 +21,15 @@
   "avg_weekly_spend": 280.00,
   "category_weekly_averages": {
     "Clothing": 55.00,
-    "Food": 95.00,
+    "Dining": 95.00,
     "Entertainment": 22.00,
     "Transport": 18.00,
     "Subscriptions": 12.00,
     "Health": 10.00
+  },
+  "category_weekly_counts": {
+    "Clothing": 4,
+    "Dining": 2,
+    "Transport": 1
   }
 }

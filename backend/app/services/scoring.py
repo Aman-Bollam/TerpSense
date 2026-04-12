@@ -1,19 +1,19 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from app.models.schemas import Goal, SpendingSummary
 
-# Categories where we do NOT intervene (essentials)
+# Categories where severity is capped at yellow (no harsh intervention)
 ESSENTIAL_CATEGORIES = {"Groceries", "Health", "Medical", "Rent", "Utilities", "Transport"}
 
-# Categories where we suggest alternatives
-DISCRETIONARY_CATEGORIES = {"Clothing", "Entertainment", "Shopping", "Subscriptions", "Food"}
+# Categories where alternatives are suggested
+DISCRETIONARY_CATEGORIES = {"Clothing", "Entertainment", "Shopping", "Subscriptions", "Dining"}
 
 
 @dataclass
 class ScoreResult:
-    severity: str  # "yellow" | "orange" | "red"
-    score: int
+    severity: str           # "yellow" | "orange" | "red"
+    score: int              # 0–100 composite
     goal_impact_days: int
     redirect_value_6mo: float
     category_week_spend: float
@@ -21,10 +21,12 @@ class ScoreResult:
     category_month_spend: float
     category_purchase_count_week: int
     is_discretionary: bool
+    # Debug fields — useful during tuning
+    debug: dict = field(default_factory=dict)
 
 
-def _clamp(value: float, min_val: float, max_val: float) -> float:
-    return max(min_val, min(max_val, value))
+def _clamp(value: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, value))
 
 
 def compute_severity(
@@ -38,71 +40,94 @@ def compute_severity(
     # --- Context values ---
     category_week_spend = spending_summary.week.get(category, 0.0)
     category_month_spend = spending_summary.month.get(category, 0.0)
-    category_week_avg = spending_summary.category_weekly_averages.get(category, 50.0)
+    category_week_avg = max(spending_summary.category_weekly_averages.get(category, 50.0), 1.0)
     avg_weekly_spend = max(spending_summary.avg_weekly_spend, 1.0)
 
-    # Estimate purchase count this week
-    avg_tx_size = max(purchase_amount, 20.0)
-    category_purchase_count_week = max(1, round(category_week_spend / avg_tx_size))
+    # Real weekly purchase count from summary (not estimated from purchase amount)
+    category_purchase_count_week = spending_summary.category_weekly_counts.get(category, 0)
 
-    # --- Goal impact (computed first, used in scoring) ---
+    # --- Goal impact ---
     goal_impact_days = 0
     if goal:
         remaining = goal.target_amount - goal.current_amount
         if remaining > 0 and goal.days_to_goal_at_current_pace > 0:
-            days_per_dollar = goal.days_to_goal_at_current_pace / remaining
+            # Cap sensitivity to avoid exploding on nearly-complete goals
+            days_per_dollar = min(goal.days_to_goal_at_current_pace / remaining, 2.0)
             goal_impact_days = round(purchase_amount * days_per_dollar)
 
     # -------------------------------------------------------
-    # CONTINUOUS SCORING
-    # Each factor produces a 0–100 contribution, then weights
-    # are applied. Final score is 0–100.
+    # FACTOR 1: Overspend — split into existing + marginal push
+    # Weight: 30 total (20 existing state, 10 marginal push)
     # -------------------------------------------------------
+    current_ratio = category_week_spend / category_week_avg
+    projected_ratio = (category_week_spend + purchase_amount) / category_week_avg
 
-    # Factor 1: Category overspend this week (40% weight)
-    # How much does adding this purchase exceed the weekly average?
-    # ratio = 1.0 → no overspend → 0 contribution
-    # ratio = 2.0 → 100% over avg → high contribution
-    # ratio = 3.0+ → caps at max
-    category_ratio = (category_week_spend + purchase_amount) / max(category_week_avg, 1.0)
-    overspend_excess = max(0.0, category_ratio - 1.0)  # 0 if at or under avg
-    factor_overspend = _clamp(overspend_excess / 2.0, 0.0, 1.0)  # normalized: 2x excess → 1.0
+    # How bad is the existing state? (already over avg = starts with signal)
+    factor_existing = _clamp((current_ratio - 1.0) / 1.5, 0.0, 1.0)
+    # How much does THIS purchase push things further?
+    factor_push = _clamp((projected_ratio - current_ratio) / 0.75, 0.0, 1.0)
+    factor_overspend = factor_existing * 20 + factor_push * 10
 
-    # Factor 2: Purchase size relative to total weekly budget (20% weight)
-    # A purchase equal to 50%+ of the weekly average is significant
-    size_ratio = purchase_amount / avg_weekly_spend
-    factor_size = _clamp(size_ratio / 0.5, 0.0, 1.0)  # 50% of weekly avg → 1.0
+    # -------------------------------------------------------
+    # FACTOR 2: Purchase frequency this week (discretionary only)
+    # Weight: 20
+    # Catches repeated small purchases — the impulse pattern
+    # -------------------------------------------------------
+    factor_frequency = 0.0
+    if is_discretionary:
+        # 4+ purchases this week in this category = max signal
+        factor_frequency = _clamp(category_purchase_count_week / 4.0, 0.0, 1.0) * 20
 
-    # Factor 3: Goal delay (30% weight)
-    # Scale by weeks of delay — each week delayed contributes linearly
-    # 4+ weeks delay → maxes out
+    # -------------------------------------------------------
+    # FACTOR 3: Goal delay
+    # Weight: 25
+    # 21+ days delay → maxes out (3 weeks is meaningful)
+    # -------------------------------------------------------
     goal_impact_weeks = goal_impact_days / 7.0
-    factor_goal = _clamp(goal_impact_weeks / 4.0, 0.0, 1.0)  # 4 weeks delay → 1.0
+    factor_goal = _clamp(goal_impact_weeks / 3.0, 0.0, 1.0) * 25
 
-    # Factor 4: Monthly category trend (10% weight)
-    # If this category is also elevated month-over-month, compound the signal
+    # -------------------------------------------------------
+    # FACTOR 4: Purchase size relative to weekly budget
+    # Weight: 15
+    # A purchase ≥ 50% of weekly avg is notable
+    # -------------------------------------------------------
+    size_ratio = purchase_amount / avg_weekly_spend
+    factor_size = _clamp(size_ratio / 0.5, 0.0, 1.0) * 15
+
+    # -------------------------------------------------------
+    # FACTOR 5: Monthly category trend
+    # Weight: 10
+    # If this category is elevated all month, compound the signal
+    # -------------------------------------------------------
     monthly_ratio = category_month_spend / max(category_week_avg * 4.3, 1.0)
     trend_excess = max(0.0, monthly_ratio - 1.0)
-    factor_trend = _clamp(trend_excess / 1.5, 0.0, 1.0)  # 2.5x monthly avg → 1.0
+    factor_trend = _clamp(trend_excess / 1.5, 0.0, 1.0) * 10
 
-    # --- Weighted composite score ---
-    raw_score = (
-        factor_overspend * 40
-        + factor_size * 20
-        + factor_goal * 30
-        + factor_trend * 10
-    )
+    # --- Composite score (0–100) ---
+    raw_score = factor_overspend + factor_frequency + factor_goal + factor_size + factor_trend
     score = round(_clamp(raw_score, 0.0, 100.0))
 
-    # --- Map score to severity ---
-    # Small purchases are capped: a $5 coffee can't be "red" even if category is overspent
+    # -------------------------------------------------------
+    # SEVERITY — gated by multiple strong signals for red
+    # Prevents a single high factor from triggering red alone
+    # -------------------------------------------------------
+    strong_signals = 0
+    if projected_ratio >= 2.0:
+        strong_signals += 1
+    if goal_impact_days >= 10:
+        strong_signals += 1
+    if category_purchase_count_week >= 3 and is_discretionary:
+        strong_signals += 1
+    if size_ratio >= 0.30:
+        strong_signals += 1
+
     if category in ESSENTIAL_CATEGORIES:
         severity = "yellow"
     elif purchase_amount < 5:
         severity = "yellow"
     elif purchase_amount < 15:
         severity = "yellow" if score < 70 else "orange"
-    elif score >= 60:
+    elif score >= 65 and strong_signals >= 2:
         severity = "red"
     elif score >= 30:
         severity = "orange"
@@ -111,6 +136,19 @@ def compute_severity(
 
     # --- Redirect value: 5% APY, 6-month approximation ---
     redirect_value_6mo = round(purchase_amount * 1.025, 2)
+
+    debug = {
+        "current_ratio": round(current_ratio, 2),
+        "projected_ratio": round(projected_ratio, 2),
+        "size_ratio": round(size_ratio, 2),
+        "strong_signals": strong_signals,
+        "f_existing": round(factor_existing, 1),
+        "f_push": round(factor_push, 1),
+        "f_frequency": round(factor_frequency, 1),
+        "f_goal": round(factor_goal, 1),
+        "f_size": round(factor_size, 1),
+        "f_trend": round(factor_trend, 1),
+    }
 
     return ScoreResult(
         severity=severity,
@@ -122,4 +160,5 @@ def compute_severity(
         category_month_spend=category_month_spend,
         category_purchase_count_week=category_purchase_count_week,
         is_discretionary=is_discretionary,
+        debug=debug,
     )

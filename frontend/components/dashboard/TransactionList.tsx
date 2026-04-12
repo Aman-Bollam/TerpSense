@@ -9,6 +9,7 @@ interface TransactionListProps {
 const CATEGORY_ICONS: Record<string, string> = {
   Clothing: "👕",
   Food: "🍔",
+  Dining: "🍔",
   Entertainment: "🎬",
   Transport: "🚗",
   Subscriptions: "📱",

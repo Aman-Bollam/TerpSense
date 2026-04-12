@@ -6,7 +6,7 @@ import type { TransactionCategory } from "@/types";
 
 const CATEGORIES: TransactionCategory[] = [
   "Clothing",
-  "Food",
+  "Dining",
   "Entertainment",
   "Transport",
   "Subscriptions",
