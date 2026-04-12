@@ -165,4 +165,4 @@ A hardcoded contextual fallback runs if the AI call fails, so the demo never bre
 
 ## Built By
 
-**Lead Developer: Aman Bollam** — Bitcamp 2026
+**Lead Developer: Aman Bollam, Ediale Odia** — Bitcamp 2026
