@@ -1,17 +1,16 @@
 import json
 import logging
-from typing import Optional
+from typing import List, Optional
 
 from openai import AzureOpenAI
 
 from app.config import settings
-from app.models.schemas import Goal
+from app.models.schemas import Goal, SpendingSummary, Transaction
 from app.services.scoring import ScoreResult
 
 logger = logging.getLogger(__name__)
 
 # --- Hardcoded fallback for demo reliability ---
-# Used when Azure OpenAI is unavailable or returns malformed output.
 FALLBACK_INTERVENTION = {
     "insights": [
         "You've already spent significantly on this category this week.",
@@ -35,15 +34,16 @@ def _get_client() -> Optional[AzureOpenAI]:
 def build_system_prompt() -> str:
     return """You are TerpSense, a financial intervention AI assistant.
 
-Your job: when a user is about to make a purchase, analyze their spending context and return a grounded, specific intervention.
+Your job: when a user is about to make a purchase, analyze their full spending context and return a grounded, specific intervention.
 
 Rules:
 - Every insight MUST reference a specific dollar amount or number from the provided data. No generic advice.
+- Use the full weekly spending breakdown and recent transactions to identify patterns across categories, not just the purchase category.
 - Be direct and helpful. Never preachy, never shame-inducing.
 - Tone: "Here's what the numbers show" — not "You really should stop."
 - Keep insights concise (1–2 sentences each).
-- The alternative_suggestion should only appear for discretionary categories (Clothing, Entertainment, Shopping, Subscriptions, Food dining out).
-- summary_line is one sentence max.
+- For alternative_suggestion: suggest a specific, realistic cheaper alternative (different store, secondhand, subscription already owned, DIY, etc.). Only for discretionary categories. Make it concrete, not vague.
+- summary_line is one sentence that captures the most important thing the user should know.
 
 Return ONLY valid JSON — no markdown, no extra text, no explanation."""
 
@@ -54,34 +54,59 @@ def build_user_message(
     merchant: Optional[str],
     score_result: ScoreResult,
     goal: Optional[Goal],
+    spending_summary: Optional[SpendingSummary] = None,
+    recent_transactions: Optional[List[Transaction]] = None,
 ) -> str:
     merchant_str = f" at {merchant}" if merchant else ""
-    goal_block = "None"
+
+    # --- Goal block ---
+    goal_block = "None active"
     if goal:
         goal_block = (
             f"Name: {goal.name}\n"
-            f"Progress: ${goal.current_amount} saved of ${goal.target_amount} target\n"
-            f"Monthly contribution needed: ${goal.monthly_contribution_needed}\n"
+            f"Progress: ${goal.current_amount:.2f} saved of ${goal.target_amount:.2f} target\n"
+            f"Monthly contribution needed: ${goal.monthly_contribution_needed:.2f}\n"
             f"Days to goal at current pace: {goal.days_to_goal_at_current_pace} days\n"
             f"Impact of this purchase: delays goal by {score_result.goal_impact_days} days"
         )
+
+    # --- Full weekly spending breakdown ---
+    weekly_block = ""
+    if spending_summary and spending_summary.week:
+        lines = [f"  - {cat}: ${amt:.2f}" for cat, amt in sorted(spending_summary.week.items(), key=lambda x: -x[1])]
+        weekly_block = (
+            f"Full weekly spending breakdown (all categories):\n"
+            + "\n".join(lines)
+            + f"\n  - Total this week: ${spending_summary.total_week:.2f}"
+            + f"\n  - Typical weekly average: ${spending_summary.avg_weekly_spend:.2f}"
+        )
+    else:
+        weekly_block = f"Weekly spending in {category}: ${score_result.category_week_spend:.2f}"
+
+    # --- Recent transactions ---
+    tx_block = ""
+    if recent_transactions:
+        recent = recent_transactions[:8]
+        lines = [f"  - ${t.amount:.2f} at {t.merchant} ({t.category}) on {t.date}" for t in recent]
+        tx_block = "Recent transactions:\n" + "\n".join(lines)
+    else:
+        tx_block = "Recent transactions: not available"
 
     return f"""Analyze this pending purchase and return a financial intervention.
 
 Purchase: ${purchase_amount:.2f}{merchant_str} ({category})
 
-Spending context:
-- {category} spend this week: ${score_result.category_week_spend:.2f} (before this purchase)
-- {category} typical weekly average: ${score_result.category_week_avg:.2f}
-- {category} spend this month: ${score_result.category_month_spend:.2f}
-- Estimated {category} purchases this week: {score_result.category_purchase_count_week}
-- Total spend this week: varies
+{weekly_block}
+
+{tx_block}
 
 Savings goal:
 {goal_block}
 
-Pre-computed values (use these exact numbers in your response):
+Pre-computed values (use these exact numbers — do not recalculate):
 - Severity: {score_result.severity}
+- {category} spend this week so far: ${score_result.category_week_spend:.2f}
+- {category} typical weekly average: ${score_result.category_week_avg:.2f}
 - Goal impact: {score_result.goal_impact_days} days delayed
 - Redirect value (6 months at 5% APY): ${score_result.redirect_value_6mo:.2f}
 - Is discretionary category: {score_result.is_discretionary}
@@ -89,8 +114,8 @@ Pre-computed values (use these exact numbers in your response):
 Return this exact JSON format:
 {{
   "insights": ["<specific insight citing real numbers>", "<second insight citing real numbers>"],
-  "alternative_suggestion": "<suggestion string if discretionary, otherwise null>",
-  "summary_line": "<one sentence summary>"
+  "alternative_suggestion": "<concrete cheaper alternative if discretionary, otherwise null>",
+  "summary_line": "<one sentence capturing the most important thing to know>"
 }}"""
 
 
@@ -100,6 +125,8 @@ def call_openai(
     merchant: Optional[str],
     score_result: ScoreResult,
     goal: Optional[Goal],
+    spending_summary: Optional[SpendingSummary] = None,
+    recent_transactions: Optional[List[Transaction]] = None,
 ) -> dict:
     client = _get_client()
 
@@ -108,7 +135,10 @@ def call_openai(
         return _build_contextual_fallback(purchase_amount, category, score_result, goal)
 
     system_prompt = build_system_prompt()
-    user_message = build_user_message(purchase_amount, category, merchant, score_result, goal)
+    user_message = build_user_message(
+        purchase_amount, category, merchant, score_result, goal,
+        spending_summary, recent_transactions
+    )
 
     try:
         response = client.chat.completions.create(
@@ -118,14 +148,13 @@ def call_openai(
                 {"role": "user", "content": user_message},
             ],
             temperature=0.4,
-            max_tokens=400,
+            max_tokens=500,
             response_format={"type": "json_object"},
         )
 
         raw = response.choices[0].message.content
         parsed = json.loads(raw)
 
-        # Validate required keys exist
         if "insights" not in parsed or not isinstance(parsed["insights"], list):
             raise ValueError("Missing or invalid 'insights' in AI response")
 
@@ -146,7 +175,6 @@ def _build_contextual_fallback(
     score_result: ScoreResult,
     goal: Optional[Goal],
 ) -> dict:
-    """Builds a context-aware fallback using real numbers — no AI needed."""
     insights = []
 
     if score_result.category_week_spend > 0:
@@ -174,7 +202,6 @@ def _build_contextual_fallback(
     elif score_result.is_discretionary and category == "Entertainment":
         alternative = "Check if this is available through a subscription you already have."
 
-    goal_name = goal.name if goal else "your savings goal"
     summary = (
         f"Redirecting this ${purchase_amount:.2f} to savings could grow to "
         f"${score_result.redirect_value_6mo:.2f} in 6 months."

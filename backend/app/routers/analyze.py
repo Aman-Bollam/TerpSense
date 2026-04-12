@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import (
@@ -7,7 +9,7 @@ from app.models.schemas import (
     PurchaseRequest,
 )
 from app.services import nessie, openai_client, scoring
-from app.services.aggregator import compute_summary, load_precomputed_summary
+from app.services.aggregator import load_precomputed_summary
 from app.state import goal_state
 
 router = APIRouter()
@@ -23,11 +25,12 @@ CONFIRMATION_MESSAGES = {
 @router.post("/analyze-purchase", response_model=InterventionResponse)
 async def analyze_purchase(body: PurchaseRequest):
     try:
-        # 1. Fetch spending context
+        # 1. Fetch spending context + transactions in parallel
         spending_summary = load_precomputed_summary(body.user_id)
-
-        # 2. Fetch savings goal (use first active goal)
-        goals = await nessie.get_goals(body.user_id)
+        goals, transactions = await asyncio.gather(
+            nessie.get_goals(body.user_id),
+            nessie.get_transactions(body.user_id),
+        )
         goal = goals[0] if goals else None
 
         # Apply any in-session goal mutations
@@ -51,6 +54,8 @@ async def analyze_purchase(body: PurchaseRequest):
             merchant=body.merchant,
             score_result=score_result,
             goal=goal,
+            spending_summary=spending_summary,
+            recent_transactions=transactions[:8],
         )
 
         # 5. Merge deterministic + AI output into final response
