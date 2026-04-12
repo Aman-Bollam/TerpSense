@@ -80,6 +80,8 @@ class InterventionResponse(BaseModel):
     alternative_suggestion: Optional[str]
     summary_line: str
     score: int
+    recommended_action: Optional[str] = None
+    confidence: Optional[float] = None
 
 
 class DecisionResponse(BaseModel):
