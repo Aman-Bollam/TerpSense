@@ -173,4 +173,4 @@ Frontend and AI Engineer: Ediale Odia
 
 ##
 
-Product Designer: Jared Josue
+Product Designer and backend engineer: Jared Josue
